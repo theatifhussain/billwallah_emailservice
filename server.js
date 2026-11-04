@@ -137,4 +137,14 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
+app.use((req, res, next) => {
+  console.log(
+    "INCOMING_REQUEST:",
+    req.method,
+    req.originalUrl,
+    new Date().toISOString()
+  );
+  next();
+});
+
 app.listen(process.env.PORT || 3000, () => console.log("Listening"));
