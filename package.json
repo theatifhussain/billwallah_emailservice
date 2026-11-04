@@ -1,0 +1,16 @@
+{
+  "name": "billwallah-mail",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test:pdf": "node test-pdf.js",
+    "test:send": "node test-send.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.14",
+    "pdfkit": "^0.15.0"
+  }
+}
