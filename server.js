@@ -118,4 +118,23 @@ app.post("/send-bill", async (req, res) => {
   }
 });
 
+// Diagnose malformed JSON requests safely
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    const raw = String(err.body || "");
+
+    console.error(
+      "INVALID_JSON_FIRST_CHAR_CODES:",
+      Array.from(raw).slice(0, 20).map(char => char.charCodeAt(0))
+    );
+
+    return res.status(400).json({
+      ok: false,
+      error: "Invalid JSON received from request"
+    });
+  }
+
+  next(err);
+});
+
 app.listen(process.env.PORT || 3000, () => console.log("Listening"));
