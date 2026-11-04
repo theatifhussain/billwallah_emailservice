@@ -62,7 +62,7 @@ async function deliver({ to, subject, html, text, pdf, pdfName }) {
   });
 }
 
-const fs = require("fs");
+
 const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/$/, "");
 const LOGO_URL = process.env.LOGO_URL || (PROVIDER === "brevo" && PUBLIC_URL ? PUBLIC_URL + "/logo.jpg" : "");
 const LOGO_SRC = LOGO_URL || "cid:bwlogo";
