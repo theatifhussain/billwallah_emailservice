@@ -1,13 +1,15 @@
+
 require("dotenv").config();
+
 const express = require("express");
 const nodemailer = require("nodemailer");
 const { generateBill } = require("./bill");
+const fs = require("fs");
+const path = require("path");
 
-
-const express = require("express");
 const app = express();
 
-// Request logger MUST come before express.json()
+// Request logger — must be before routes and JSON parser
 app.use((req, res, next) => {
   console.log(
     "INCOMING_REQUEST:",
@@ -17,6 +19,9 @@ app.use((req, res, next) => {
   );
   next();
 });
+
+app.use(express.json({ limit: "1mb" }));
+
 
 app.use(express.json({ limit: "1mb" }));
 
