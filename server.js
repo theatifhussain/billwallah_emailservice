@@ -3,7 +3,21 @@ const express = require("express");
 const nodemailer = require("nodemailer");
 const { generateBill } = require("./bill");
 
+
+const express = require("express");
 const app = express();
+
+// Request logger MUST come before express.json()
+app.use((req, res, next) => {
+  console.log(
+    "INCOMING_REQUEST:",
+    req.method,
+    req.originalUrl,
+    new Date().toISOString()
+  );
+  next();
+});
+
 app.use(express.json({ limit: "1mb" }));
 
 // MAIL_PROVIDER: "brevo" (HTTPS API, works on free hosting) or "smtp" (Hostinger SMTP, needs paid hosting / VPS)
