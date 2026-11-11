@@ -76,6 +76,9 @@ app.post("/send-bill", async (req, res) => {
     return res.status(400).json({ ok: false, error: "amount must be a number" });
   }
 
+  // Reply right away: Cashfree Relay gives up after ~5 seconds. PDF + email are done in the background.
+  res.status(202).json({ ok: true, queued: true });
+
   try {
     const pdf = await generateBill(d);
     const invNo = d.invoice_no || d.order_id;
@@ -121,10 +124,10 @@ app.post("/send-bill", async (req, res) => {
       pdf,
       pdfName: `BillWallah-Invoice-${String(invNo).replace(/[^\w.-]/g, "-")}.pdf`,
     });
-    res.json({ ok: true });
+    console.log("Mail sent:", d.email, d.invoice_no || d.order_id);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ ok: false, error: "Failed to send email" });
+    console.error("MAIL FAILED for", d.email, d.invoice_no || d.order_id);
   }
 });
 
