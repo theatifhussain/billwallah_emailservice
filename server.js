@@ -1,28 +1,9 @@
-
 require("dotenv").config();
-
 const express = require("express");
 const nodemailer = require("nodemailer");
 const { generateBill } = require("./bill");
-const fs = require("fs");
-const path = require("path");
 
 const app = express();
-
-// Request logger — must be before routes and JSON parser
-app.use((req, res, next) => {
-  console.log(
-    "INCOMING_REQUEST:",
-    req.method,
-    req.originalUrl,
-    new Date().toISOString()
-  );
-  next();
-});
-
-app.use(express.json({ limit: "1mb" }));
-
-
 app.use(express.json({ limit: "1mb" }));
 
 // MAIL_PROVIDER: "brevo" (HTTPS API, works on free hosting) or "smtp" (Hostinger SMTP, needs paid hosting / VPS)
@@ -62,7 +43,7 @@ async function deliver({ to, subject, html, text, pdf, pdfName }) {
   });
 }
 
-
+const fs = require("fs");
 const PUBLIC_URL = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || "").replace(/\/$/, "");
 const LOGO_URL = process.env.LOGO_URL || (PROVIDER === "brevo" && PUBLIC_URL ? PUBLIC_URL + "/logo.jpg" : "");
 const LOGO_SRC = LOGO_URL || "cid:bwlogo";
@@ -77,9 +58,19 @@ app.post("/send-bill", async (req, res) => {
   if (!process.env.API_KEY || req.headers["x-api-key"] !== process.env.API_KEY) {
     return res.status(401).json({ ok: false, error: "Unauthorized" });
   }
-  const d = req.body || {};
+  // Accept both {...fields} and {"data": {...fields}} (some Relay setups wrap the body)
+  const raw = req.body || {};
+  const d = raw.data && typeof raw.data === "object" ? raw.data : raw;
+  // order_id can be null for some payments, so fall back to invoice_no
+  d.order_id = d.order_id || d.invoice_no || d.gateway_order_id;
   if (!d.email || !d.order_id || !d.amount) {
-    return res.status(400).json({ ok: false, error: "email, order_id and amount are required" });
+    const missing = ["email", "order_id", "amount"].filter((k) => !d[k]);
+    console.error("Missing fields:", missing.join(", "));
+    return res.status(400).json({ ok: false, error: "missing: " + missing.join(", ") });
+  }
+  d.email = String(d.email).trim();
+  if (!/^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/.test(d.email)) {
+    return res.status(400).json({ ok: false, error: "invalid email address" });
   }
   if (!Number.isFinite(Number(d.amount))) {
     return res.status(400).json({ ok: false, error: "amount must be a number" });
@@ -135,35 +126,6 @@ app.post("/send-bill", async (req, res) => {
     console.error(err);
     res.status(500).json({ ok: false, error: "Failed to send email" });
   }
-});
-
-// Diagnose malformed JSON requests safely
-app.use((err, req, res, next) => {
-  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
-    const raw = String(err.body || "");
-
-    console.error(
-      "INVALID_JSON_FIRST_CHAR_CODES:",
-      Array.from(raw).slice(0, 20).map(char => char.charCodeAt(0))
-    );
-
-    return res.status(400).json({
-      ok: false,
-      error: "Invalid JSON received from request"
-    });
-  }
-
-  next(err);
-});
-
-app.use((req, res, next) => {
-  console.log(
-    "INCOMING_REQUEST:",
-    req.method,
-    req.originalUrl,
-    new Date().toISOString()
-  );
-  next();
 });
 
 app.listen(process.env.PORT || 3000, () => console.log("Listening"));
